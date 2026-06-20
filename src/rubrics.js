@@ -50,6 +50,14 @@ export const getRubricForSession = (sessionTypeId) => {
 export const getMaxTotal = (rubric) =>
   rubric.reduce((sum, criterion) => sum + criterion.points, 0);
 
+// Sums a single panelist's stored grade JSON (e.g. { research_excellence: 18, ... })
+// against the criterion keys defined by a rubric. Unknown/missing keys are
+// treated as 0 so a malformed or partial grade doesn't throw.
+export const sumGrade = (grade, rubric) => {
+  if (!grade) return 0;
+  return rubric.reduce((sum, criterion) => sum + (Number(grade[criterion.key]) || 0), 0);
+};
+
 // Award categories, by discipline.
 export const AWARD_CATEGORIES = {
   application_development: {

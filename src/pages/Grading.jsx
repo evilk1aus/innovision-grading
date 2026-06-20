@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -245,6 +245,7 @@ const ProjectList = ({ sessionTypeId, sessionName, projects, onBack, panelistId 
 
 const Grading = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const panelistId = location.state ? location.state.userId : null;
 
   const [sessionTypes, setSessionTypes] = useState([]);
@@ -295,6 +296,10 @@ const Grading = () => {
     setProjects([]);
   };
 
+  const goToScoreboard = () => {
+    navigate('/scoreboard', { state: location.state });
+  };
+
   const selectedSession = sessionTypes.find((s) => s.id === selectedSessionId);
 
   if (selectedSessionId !== null) {
@@ -306,19 +311,53 @@ const Grading = () => {
       );
     }
     return (
-      <ProjectList
-        sessionTypeId={selectedSessionId}
-        sessionName={selectedSession ? selectedSession.name : ""}
-        projects={projects}
-        onBack={handleBack}
-        panelistId={panelistId}
-      />
+      <>
+        <div className="relative">
+          <button
+            onClick={goToScoreboard}
+            className="fixed top-4 right-4 z-10 text-gray-300 hover:text-blue-300 text-sm border border-gray-700 hover:border-blue-400 bg-gray-900 rounded-md px-3 py-1.5 transition-colors"
+          >
+            View Scoreboard
+          </button>
+          <ProjectList
+            sessionTypeId={selectedSessionId}
+            sessionName={selectedSession ? selectedSession.name : ""}
+            projects={projects}
+            onBack={handleBack}
+            panelistId={panelistId}
+          />
+        </div>
+        {errorLog != null && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+            <div className="bg-gray-800 border border-gray-700 rounded-md p-6 max-w-md">
+              <p className="text-gray-100">An error occurred. Please check the error message below.</p>
+              <p className="text-red-400 text-sm mt-2">{errorLog}</p>
+              <div className="flex flex-row justify-end mt-4">
+                <button
+                  onClick={() => setErrorLog(null)}
+                  className="bg-blue-500 hover:bg-blue-400 text-gray-900 font-medium rounded-md px-4 py-2 transition-colors"
+                >
+                  Ok
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
   return (
     <>
-      <SessionTypeSelector sessionTypes={sessionTypes} onSelect={handleSelectSession} />
+      <div className="relative">
+        <button
+          onClick={goToScoreboard}
+          className="fixed top-4 right-4 z-10 text-gray-300 hover:text-blue-300 text-sm border border-gray-700 hover:border-blue-400 bg-gray-900 rounded-md px-3 py-1.5 transition-colors"
+        >
+          View Scoreboard
+        </button>
+        <SessionTypeSelector sessionTypes={sessionTypes} onSelect={handleSelectSession} />
+      </div>
       {errorLog != null && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50">
           <div className="bg-gray-800 border border-gray-700 rounded-md p-6 max-w-md">
