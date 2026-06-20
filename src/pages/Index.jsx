@@ -102,7 +102,7 @@ const Index = () => {
               onChange={changeForm}
               required
             />
-            <label className="block text-sm font-medium text-gray-100 pt-4">Passphrase</label>
+            <label className="block text-sm font-medium text-gray-100 pt-4">Password</label>
             <input
               type='password'
               name='password'
