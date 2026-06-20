@@ -51,12 +51,9 @@ const Index = () => {
       return
     }
 
-    const inputPasswordHash = sha256(formData.password)
-    console.log(inputPasswordHash);
-
     console.log(data)
 
-    if (inputPasswordHash != data[0].password) {
+    if (formData.password != data[0].password) {
       setErrorLog("Invalid credentials!");
       return
     }
