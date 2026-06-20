@@ -3,15 +3,18 @@ import { useLocation } from "react-router-dom";
 
 import { createClient } from '@supabase/supabase-js'
 
-import { getRubricForSession, getMaxTotal } from '../rubrics.js'
+import { getRubricForSession, getMaxTotal, getAwardOptionsForSession } from '../rubrics.js'
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-// Upserts the Grading table with this panelist's score for a project.
+// Upserts the Grading table with this panelist's score (and optional award
+// nomination) for a project.
 // scoresJson is keyed by criterion, e.g. { research_excellence: 18, innovation: 12, ... }.
+// award is a string like "data_science:Best Machine Learning Model", or null if
+// the panelist didn't nominate this project for an award.
 // Conflict target is (project_id, panelist_id) so re-saving updates the same row
 // instead of inserting a duplicate.
-const updateScores = async (projectId, panelistId, scoresJson) => {
+const updateScores = async (projectId, panelistId, scoresJson, award) => {
   const { data, error } = await supabase
     .from('Grading')
     .upsert(
@@ -19,6 +22,7 @@ const updateScores = async (projectId, panelistId, scoresJson) => {
         project_id: projectId,
         panelist_id: panelistId,
         grade: scoresJson,
+        award: award,
       },
       { onConflict: "project_id,panelist_id" }
     );
@@ -72,8 +76,44 @@ const ScoreInput = ({ value, max, onChange }) => {
   );
 };
 
-const ProjectCard = ({ project, rubric, panelistId }) => {
+const AwardSelector = ({ award, onChange, options }) => {
+  if (options.length === 0) return null;
+
+  // Group flat options back by category for an <optgroup> layout.
+  const grouped = options.reduce((acc, opt) => {
+    if (!acc[opt.categoryLabel]) acc[opt.categoryLabel] = [];
+    acc[opt.categoryLabel].push(opt);
+    return acc;
+  }, {});
+
+  return (
+    <div className="flex flex-row items-center justify-between gap-4 pb-4 border-b border-gray-700">
+      <label className="text-gray-100 text-sm">
+        Award nomination <span className="text-gray-400">(optional)</span>
+      </label>
+      <select
+        value={award || ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+        className="p-1.5 border border-gray-300 bg-white rounded-md text-sm max-w-[60%]"
+      >
+        <option value="">No nomination</option>
+        {Object.entries(grouped).map(([categoryLabel, opts]) => (
+          <optgroup key={categoryLabel} label={categoryLabel}>
+            {opts.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+const ProjectCard = ({ project, rubric, panelistId, sessionTypeId }) => {
   const maxTotal = getMaxTotal(rubric);
+  const awardOptions = getAwardOptionsForSession(sessionTypeId);
 
   const initialScores = rubric.reduce((acc, criterion) => {
     acc[criterion.key] = 0;
@@ -81,12 +121,19 @@ const ProjectCard = ({ project, rubric, panelistId }) => {
   }, {});
 
   const [scores, setScores] = useState(initialScores);
+  const [award, setAward] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   const setScore = (key, value) => {
     setScores((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+    setSaveError(null);
+  };
+
+  const handleAwardChange = (value) => {
+    setAward(value);
     setSaved(false);
     setSaveError(null);
   };
@@ -104,7 +151,7 @@ const ProjectCard = ({ project, rubric, panelistId }) => {
 
     setSaving(true);
     setSaveError(null);
-    const result = await updateScores(project.id, panelistId, payload);
+    const result = await updateScores(project.id, panelistId, payload, award);
     setSaving(false);
 
     if (result.error) {
@@ -121,6 +168,8 @@ const ProjectCard = ({ project, rubric, panelistId }) => {
         <p className="text-gray-300 text-sm">{project.app_name}</p>
         <p className="text-gray-400 text-sm">{project.presenters}</p>
       </div>
+
+      <AwardSelector award={award} onChange={handleAwardChange} options={awardOptions} />
 
       <div className="mt-4 flex flex-col gap-3">
         {rubric.map((criterion) => (
@@ -179,7 +228,13 @@ const ProjectList = ({ sessionTypeId, sessionName, projects, onBack, panelistId 
         ) : (
           <div className="mt-8 flex flex-col gap-6">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} rubric={rubric} panelistId={panelistId} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+                rubric={rubric}
+                panelistId={panelistId}
+                sessionTypeId={sessionTypeId}
+              />
             ))}
           </div>
         )}

@@ -49,3 +49,90 @@ export const getRubricForSession = (sessionTypeId) => {
 
 export const getMaxTotal = (rubric) =>
   rubric.reduce((sum, criterion) => sum + criterion.points, 0);
+
+// Award categories, by discipline.
+export const AWARD_CATEGORIES = {
+  application_development: {
+    label: "Application Development",
+    awards: [
+      "Best Mobile/Web Application",
+      "Best Software Architecture",
+      "Best Industry-Ready Solution",
+      "Best AI-Powered Solution",
+    ],
+  },
+  hci: {
+    label: "HCI",
+    awards: [
+      "Best User Experience (UI/UX) 1",
+      "Best User Experience (UI/UX) 2",
+      "Best Algorithmic Solution",
+    ],
+  },
+  data_science: {
+    label: "Data Science",
+    awards: [
+      "Best Data Storytelling Award",
+      "Best Machine Learning Model",
+      "Best Data-Driven Innovation",
+    ],
+  },
+  computer_architecture_iot: {
+    label: "Computer Architecture / IoT",
+    awards: [
+      "Best IoT Innovation",
+      "Best Embedded System Design",
+      "Best Smart Monitoring Solution",
+    ],
+  },
+  system_analysis_design: {
+    label: "System Analysis & Design",
+    awards: [
+      "Best System Design",
+      "Most Innovative Solution",
+      "Best Business Process Design",
+    ],
+  },
+};
+
+// Map a SessionType id to the award category key(s) available for it.
+// A session can offer more than one category (e.g. Session D offers both
+// Application Development and Data Science awards).
+export const getAwardCategoryKeysForSession = (sessionTypeId) => {
+  switch (sessionTypeId) {
+    case 1: // Session A: AI, ML & Intelligent Analytics
+      return ["data_science"];
+    case 2: // Session B: Educational, Healthcare & Human Development Systems
+      return ["application_development"];
+    case 3: // Session C: IoT, Smart Environment & Sustainability
+      return ["computer_architecture_iot"];
+    case 4: // Session D: Business, Community & Enterprise Information Systems
+      return ["application_development", "data_science"];
+    case 5: // Session E: Tourism, Hospitality, Recreation & Smart Service Applications
+      return ["application_development"];
+    case 6: // Session F: Systems Analysis & Design Showcase
+      return ["system_analysis_design"];
+    case 7: // Session G: HCI & Java Programming Peer Mentoring Session
+      return ["hci"];
+    default:
+      return [];
+  }
+};
+
+// Flat list of { value, label } award options available for a session,
+// ready to drop into a <select>. value is a stable slug used for storage.
+export const getAwardOptionsForSession = (sessionTypeId) => {
+  const categoryKeys = getAwardCategoryKeysForSession(sessionTypeId);
+  const options = [];
+  categoryKeys.forEach((categoryKey) => {
+    const category = AWARD_CATEGORIES[categoryKey];
+    category.awards.forEach((awardLabel) => {
+      options.push({
+        value: `${categoryKey}:${awardLabel}`,
+        label: awardLabel,
+        categoryLabel: category.label,
+      });
+    });
+  });
+  return options;
+};
